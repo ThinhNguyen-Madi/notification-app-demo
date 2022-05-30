@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
@@ -13,14 +14,25 @@ var firebaseConfig = {
 
 const firebaseApp = initializeApp(firebaseConfig);
 const messaging = getMessaging(firebaseApp);
+const PASPAS_URL="http://localhost:3000/graphql" 
 
-export const getToken2 = (setTokenFound) => {
+export const getToken2 = async (setTokenFound) => {
     return getToken(messaging, {vapidKey: 'BNcA3wCXFrCNbmln65wvPEmjuJ50aPUbtoZxo9iwuI8Ku3zLuf4QbvO0q1WZYcXNHpQGSb1IC9Gyv9CzbILQvrU'}).then((currentToken) => {
       if (currentToken) {
         console.log('current token for client: ', currentToken);
         setTokenFound(true);
-        // Track the token -> client mapping, by sending to backend server
-        // show on the UI that permission is secured
+        axios.post(
+          PASPAS_URL,
+          {
+              query: `mutation registerDeviceToken($input: RegisterDeviceTokenInput!) { registerDeviceToken(input: $input) { party_id } }`,
+              variables: `{"input":{"value": "${currentToken}","type": "BROWSER" }}`
+          },
+          {
+              headers: {
+                  authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MTczZmZkNS0yMTI4LTRhNmYtODlmZi0wN2UyYzNlYzk2NjYiLCJncmFudHMiOlsiQ1VTVE9NRVIiXSwiaWF0IjoxNjUzODgzODgxLCJleHAiOjE2ODU0NDE0ODF9.vFP3O7GNCvYH91B_eKm2cImw6SXHHZ-5dXVdoq2LQ2Q"
+              },
+          }
+      )
       } else {
         console.log('No registration token available. Request permission to generate one.');
         setTokenFound(false);
